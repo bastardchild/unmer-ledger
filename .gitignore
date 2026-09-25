@@ -1,0 +1,37 @@
+# OS / editor junk
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*.swo
+*~
+.idea/
+.vscode/
+
+# PHP tooling
+vendor/
+composer.lock
+.phpunit.result.cache
+.php-cs-fixer.cache
+
+# Node tooling
+node_modules/
+npm-debug.log*
+yarn-error.log*
+
+# Logs and local scratch files
+*.log
+*.tmp
+*.bak
+*.orig
+
+# Environment / secrets — never commit
+.env
+.env.*
+!.env.example
+
+# Local test output artifacts
+coverage/
+
+# Built distribution archives
+*.zip
