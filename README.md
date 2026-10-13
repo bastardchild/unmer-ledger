@@ -15,7 +15,7 @@ hash-chain disimpan di microservice **FastAPI** (SQLite) yang berjalan lokal di
 
 ```
 Pemindai QR ──HTTPS──▶ WordPress ──HTTP 127.0.0.1:8000──▶ FastAPI ──▶ ledger.db (SQLite)
-                      /dokumen/tampilkan/{id}/            (uvicorn, systemd)
+                      /dokumen/tampilkan/{id}/            (uvicorn, screen)
 ```
 
 - **WordPress plugin** (folder ini) — form admin, tampilan QR, halaman verifikasi publik, routing.
@@ -30,8 +30,8 @@ Pemindai QR ──HTTPS──▶ WordPress ──HTTP 127.0.0.1:8000──▶ Fa
 
 | Komponen | Versi |
 |----------|-------|
-| WordPress | 5.8+ |
-| PHP | 7.4+ |
+| WordPress | 7.1+ |
+| PHP | 8.2+ |
 | Microservice FastAPI | harus berjalan di `127.0.0.1:8000` |
 | Permalink WordPress | **Post name** (pretty permalinks) — wajib agar rewrite berfungsi |
 
@@ -44,8 +44,8 @@ Pemindai QR ──HTTPS──▶ WordPress ──HTTP 127.0.0.1:8000──▶ Fa
 1. Copy folder `unmer-ledger/` ke direktori plugin WordPress:
 
    ```bash
-   sudo cp -r unmer-ledger /var/www/<wp>/wp-content/plugins/
-   sudo chown -R www-data:www-data /var/www/<wp>/wp-content/plugins/unmer-ledger
+   sudo cp -r unmer-ledger /var/www/unmer.ac.id/wp-content/plugins/
+   sudo chown -R apache:apache /var/www/unmer.ac.id/wp-content/plugins/unmer-ledger
    ```
 
 2. Masuk ke **wp-admin → Plugins**, lalu aktifkan **UNMER Digital Ledger Dokumen**.
@@ -69,6 +69,7 @@ Pemindai QR ──HTTPS──▶ WordPress ──HTTP 127.0.0.1:8000──▶ Fa
 1. wp-admin → **Pencatatan Dokumen** (butuh kapabilitas `manage_options`).
 2. Isi form:
    - **ID Referensi** — default `YYYYMMDD` + 3 digit acak, dapat diubah.
+     Hanya huruf, angka, `-`, `_` (maks 64 karakter); format lain ditolak sebelum dikirim.
    - **Jenis Dokumen** — Surat Keterangan / SK / Sertifikat / Surat Tugas / Lainnya.
    - **Nomor Dokumen** — contoh `042/BAA/UNMER/III/2026`.
    - **Judul / Perihal** — contoh `Keterangan Aktif Kuliah`.

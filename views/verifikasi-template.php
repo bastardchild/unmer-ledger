@@ -16,9 +16,31 @@ $unmer_record = isset( $GLOBALS['unmer_ledger_record'] ) && is_array( $GLOBALS['
 	? $GLOBALS['unmer_ledger_record']
 	: null;
 
+// Treat records missing required ledger fields as invalid (e.g. legacy rows
+// written before a schema change, or malformed API responses).
+$unmer_required_keys = array(
+	'reference_id',
+	'nomor_dokumen',
+	'jenis_dokumen',
+	'judul_dokumen',
+	'tanggal_surat',
+	'penandatangan',
+	'created_at',
+	'block_index',
+	'block_hash',
+	'previous_hash',
+);
+if ( is_array( $unmer_record ) ) {
+	foreach ( $unmer_required_keys as $unmer_key ) {
+		if ( ! array_key_exists( $unmer_key, $unmer_record ) ) {
+			$unmer_record = null;
+			break;
+		}
+	}
+}
+
 $unmer_is_valid = ( null !== $unmer_record );
 
-$unmer_doc_number = $unmer_is_valid ? $unmer_record['nomor_dokumen'] : '';
 $unmer_title      = $unmer_is_valid
 	? 'Dokumen - Universitas Merdeka Malang'
 	: 'Verifikasi Dokumen - Universitas Merdeka Malang';

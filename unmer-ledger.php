@@ -4,8 +4,8 @@
  * Plugin URI:        https://unmer.ac.id/
  * Description:       Pencatatan dan verifikasi dokumen resmi berbasis hash-chain. Menghubungkan WordPress dengan microservice FastAPI pada localhost.
  * Version:           1.0.0
- * Requires at least: 5.8
- * Requires PHP:      7.4
+ * Requires at least: 7.1
+ * Requires PHP:      8.2
  * Author:            Universitas Merdeka (UNMER)
  * License:           GPL-2.0-or-later
  * License URI:       https://www.gnu.org/licenses/gpl-2.0.html
@@ -22,6 +22,47 @@ define( 'UNMER_LEDGER_VERSION', '1.0.0' );
 define( 'UNMER_LEDGER_FILE', __FILE__ );
 define( 'UNMER_LEDGER_DIR', plugin_dir_path( __FILE__ ) );
 define( 'UNMER_LEDGER_URL', plugin_dir_url( __FILE__ ) );
+define( 'UNMER_LEDGER_MIN_WP', '7.1' );
+define( 'UNMER_LEDGER_MIN_PHP', '8.2' );
+
+/**
+ * Verify the server meets the minimum WordPress and PHP requirements.
+ *
+ * @return bool True when requirements are satisfied.
+ */
+function unmer_ledger_requirements_met() {
+	if ( version_compare( PHP_VERSION, UNMER_LEDGER_MIN_PHP, '<' ) ) {
+		return false;
+	}
+	if ( version_compare( get_bloginfo( 'version' ), UNMER_LEDGER_MIN_WP, '<' ) ) {
+		return false;
+	}
+	return true;
+}
+
+/**
+ * Admin notice shown when the server does not meet requirements.
+ *
+ * @return void
+ */
+function unmer_ledger_requirements_notice() {
+	printf(
+		'<div class="notice notice-error"><p>%s</p></div>',
+		esc_html(
+			sprintf(
+				/* translators: 1: required WordPress version, 2: required PHP version */
+				__( 'UNMER Digital Ledger Dokumen memerlukan WordPress %1$s+ dan PHP %2$s+. Plugin dinonaktifkan.', 'unmer-ledger' ),
+				UNMER_LEDGER_MIN_WP,
+				UNMER_LEDGER_MIN_PHP
+			)
+		)
+	);
+}
+
+if ( ! unmer_ledger_requirements_met() ) {
+	add_action( 'admin_notices', 'unmer_ledger_requirements_notice' );
+	return;
+}
 
 require_once UNMER_LEDGER_DIR . 'includes/class-ledger-api.php';
 
@@ -128,6 +169,32 @@ function unmer_ledger_admin_menu() {
 add_action( 'admin_menu', 'unmer_ledger_admin_menu' );
 
 /**
+ * Validate the document payload before sending it to the ledger API.
+ *
+ * Mirrors the FastAPI constraints so the operator gets a clear message
+ * instead of a raw API error: reference_id charset and tanggal_surat date.
+ *
+ * @param array $payload Sanitized document payload.
+ * @return string|null Error message, or null when the payload is valid.
+ */
+function unmer_ledger_validate_payload( $payload ) {
+	$reference_id = isset( $payload['reference_id'] ) ? $payload['reference_id'] : '';
+	if ( '' === $reference_id || 1 !== preg_match( '/^[A-Za-z0-9_-]{1,64}$/', $reference_id ) ) {
+		return __( 'ID Referensi tidak valid. Gunakan 1-64 karakter: huruf, angka, tanda hubung (-) atau garis bawah (_).', 'unmer-ledger' );
+	}
+
+	$tanggal = isset( $payload['tanggal_surat'] ) ? $payload['tanggal_surat'] : '';
+	if ( 1 !== preg_match( '/^(\d{4})-(\d{2})-(\d{2})$/', $tanggal, $parts ) ) {
+		return __( 'Tanggal Surat tidak valid. Gunakan format YYYY-MM-DD.', 'unmer-ledger' );
+	}
+	if ( ! checkdate( (int) $parts[2], (int) $parts[3], (int) $parts[1] ) ) {
+		return __( 'Tanggal Surat tidak valid. Periksa kembali tanggal yang dimasukkan.', 'unmer-ledger' );
+	}
+
+	return null;
+}
+
+/**
  * Render the admin registration page.
  *
  * @return void
@@ -152,15 +219,20 @@ function unmer_ledger_render_admin_page() {
 			'penandatangan'  => isset( $_POST['penandatangan'] ) ? sanitize_text_field( wp_unslash( $_POST['penandatangan'] ) ) : '',
 		);
 
-		$api       = new Unmer_Ledger_API();
-		$response  = $api->post_dokumen( $payload );
-
-		if ( is_wp_error( $response ) ) {
-			$error = $response->get_error_message();
-		} elseif ( ! empty( $response['status'] ) && 'success' === $response['status'] ) {
-			$result = $response;
+		$validation_error = unmer_ledger_validate_payload( $payload );
+		if ( null !== $validation_error ) {
+			$error = $validation_error;
 		} else {
-			$error = __( 'Gagal mencatat dokumen. Periksa kembali data atau ID Referensi (mungkin sudah terdaftar).', 'unmer-ledger' );
+			$api      = new Unmer_Ledger_API();
+			$response = $api->post_dokumen( $payload );
+
+			if ( is_wp_error( $response ) ) {
+				$error = $response->get_error_message();
+			} elseif ( ! empty( $response['status'] ) && 'success' === $response['status'] ) {
+				$result = $response;
+			} else {
+				$error = __( 'Gagal mencatat dokumen. Periksa kembali data atau ID Referensi (mungkin sudah terdaftar).', 'unmer-ledger' );
+			}
 		}
 	}
 

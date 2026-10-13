@@ -106,9 +106,10 @@ class Unmer_Ledger_API {
 		}
 
 		if ( $this->last_status < 200 || $this->last_status >= 300 ) {
-			$detail = is_array( $decoded ) && isset( $decoded['detail'] )
-				? $decoded['detail']
-				: __( 'Terjadi kesalahan pada layanan ledger.', 'unmer-ledger' );
+			$detail = __( 'Terjadi kesalahan pada layanan ledger.', 'unmer-ledger' );
+			if ( is_array( $decoded ) && isset( $decoded['detail'] ) ) {
+				$detail = $this->flatten_detail( $decoded['detail'], $detail );
+			}
 			return new WP_Error( 'unmer_ledger_error', $detail );
 		}
 
@@ -120,5 +121,38 @@ class Unmer_Ledger_API {
 		}
 
 		return $decoded;
+	}
+
+	/**
+	 * Normalize an API error detail into a displayable string.
+	 *
+	 * FastAPI returns a plain string for HTTPException (e.g. 400/404) but a
+	 * list of error objects for request validation failures (e.g. 422).
+	 *
+	 * @param mixed  $detail   Raw `detail` value from the decoded body.
+	 * @param string $fallback Fallback message when nothing usable is found.
+	 * @return string
+	 */
+	private function flatten_detail( $detail, $fallback ) {
+		if ( is_string( $detail ) && '' !== $detail ) {
+			return $detail;
+		}
+		if ( is_array( $detail ) ) {
+			$messages = array();
+			foreach ( $detail as $item ) {
+				if ( is_string( $item ) && '' !== $item ) {
+					$messages[] = $item;
+				} elseif ( is_array( $item ) && isset( $item['msg'] ) && is_string( $item['msg'] ) ) {
+					$field      = isset( $item['loc'] ) && is_array( $item['loc'] )
+						? implode( '.', array_map( 'strval', $item['loc'] ) )
+						: '';
+					$messages[] = '' !== $field ? $field . ': ' . $item['msg'] : $item['msg'];
+				}
+			}
+			if ( ! empty( $messages ) ) {
+				return implode( ' ', array_slice( $messages, 0, 3 ) );
+			}
+		}
+		return $fallback;
 	}
 }

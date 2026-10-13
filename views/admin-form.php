@@ -64,7 +64,7 @@ $jenis_opts  = array(
 					type="button"
 					class="button button-primary"
 					id="unmer-qr-download"
-					data-filename="qr-<?php echo esc_attr( $result['block_hash'] ); ?>.png"
+					data-filename="qr-<?php echo esc_attr( isset( $result['reference_id'] ) ? $result['reference_id'] : $result['block_hash'] ); ?>.png"
 				>
 					<?php echo esc_html__( 'Download QR Code (PNG)', 'unmer-ledger' ); ?>
 				</button>
