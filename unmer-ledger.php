@@ -4,7 +4,7 @@
  * Plugin URI:        https://unmer.ac.id/
  * Description:       Pencatatan dan verifikasi dokumen resmi berbasis hash-chain. Menghubungkan WordPress dengan microservice FastAPI pada localhost.
  * Version:           1.0.0
- * Requires at least: 7.1
+ * Requires at least: 6.0
  * Requires PHP:      8.2
  * Author:            Universitas Merdeka (UNMER)
  * License:           GPL-2.0-or-later
@@ -22,7 +22,7 @@ define( 'UNMER_LEDGER_VERSION', '1.0.0' );
 define( 'UNMER_LEDGER_FILE', __FILE__ );
 define( 'UNMER_LEDGER_DIR', plugin_dir_path( __FILE__ ) );
 define( 'UNMER_LEDGER_URL', plugin_dir_url( __FILE__ ) );
-define( 'UNMER_LEDGER_MIN_WP', '7.1' );
+define( 'UNMER_LEDGER_MIN_WP', '6.0' );
 define( 'UNMER_LEDGER_MIN_PHP', '8.2' );
 
 /**
@@ -204,9 +204,29 @@ function unmer_ledger_render_admin_page() {
 		wp_die( esc_html__( 'Anda tidak memiliki izin untuk mengakses halaman ini.', 'unmer-ledger' ) );
 	}
 
-	$result = null;
-	$error  = null;
+	$result         = null;
+	$error          = null;
+	$delete_success = null;
+	$api            = new Unmer_Ledger_API();
 
+	// Handle Document Deletion (Soft Delete / Invalidate Permalink)
+	if ( isset( $_POST['unmer_ledger_delete_action'] ) && isset( $_POST['delete_ref_id'] ) ) {
+		$del_ref = sanitize_text_field( wp_unslash( $_POST['delete_ref_id'] ) );
+		check_admin_referer( 'unmer_ledger_delete_' . $del_ref, 'unmer_delete_nonce' );
+
+		$del_res = $api->delete_dokumen( $del_ref );
+		if ( is_wp_error( $del_res ) ) {
+			$error = $del_res->get_error_message();
+		} else {
+			$delete_success = sprintf(
+				/* translators: %s: reference id */
+				__( 'Dokumen dengan ID Referensi "%s" berhasil dihapus dari tampilan dan permalink telah dinonaktifkan.', 'unmer-ledger' ),
+				$del_ref
+			);
+		}
+	}
+
+	// Handle Document Creation
 	if ( isset( $_POST['unmer_ledger_submit'] ) ) {
 		check_admin_referer( 'unmer_ledger_create', 'unmer_ledger_nonce' );
 
@@ -223,7 +243,6 @@ function unmer_ledger_render_admin_page() {
 		if ( null !== $validation_error ) {
 			$error = $validation_error;
 		} else {
-			$api      = new Unmer_Ledger_API();
 			$response = $api->post_dokumen( $payload );
 
 			if ( is_wp_error( $response ) ) {
@@ -235,6 +254,10 @@ function unmer_ledger_render_admin_page() {
 			}
 		}
 	}
+
+	// Fetch all active documents for the list view
+	$list_response = $api->get_list_dokumen();
+	$dokumen_list  = ( ! is_wp_error( $list_response ) && is_array( $list_response ) ) ? $list_response : array();
 
 	$view = UNMER_LEDGER_DIR . 'views/admin-form.php';
 	if ( file_exists( $view ) ) {

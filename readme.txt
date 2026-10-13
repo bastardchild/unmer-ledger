@@ -1,8 +1,8 @@
 === UNMER Digital Ledger Dokumen ===
 Contributors: unmer
 Tags: document verification, ledger, hash-chain, qr code, blockchain
-Requires at least: 7.1
-Tested up to: 7.1.2
+Requires at least: 6.0
+Tested up to: 6.7
 Requires PHP: 8.2
 Stable tag: 1.0.0
 License: GPL-2.0-or-later
@@ -43,7 +43,7 @@ disimpan di SQLite oleh service tersebut dan diakses melalui HTTP localhost.
 
 = Apakah plugin ini butuh WordPress versi tertentu? =
 
-Ya. Plugin ini memerlukan **WordPress 7.1+** dan **PHP 8.2+**.
+Ya. Plugin ini memerlukan **WordPress 6.0+** dan **PHP 8.2+**.
 
 = Apakah data ledger disimpan di database WordPress? =
 

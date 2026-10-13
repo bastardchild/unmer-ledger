@@ -80,6 +80,46 @@ class Unmer_Ledger_API {
 	}
 
 	/**
+	 * Fetch all active ledger records.
+	 *
+	 * @return array|WP_Error Array of records on success, WP_Error otherwise.
+	 */
+	public function get_list_dokumen() {
+		$url = self::BASE_URL . '/api/dokumen';
+
+		$response = wp_remote_get(
+			$url,
+			array(
+				'timeout' => self::TIMEOUT,
+				'headers' => array( 'Accept' => 'application/json' ),
+			)
+		);
+
+		return $this->parse_response( $response );
+	}
+
+	/**
+	 * Soft-delete a ledger record by reference id.
+	 *
+	 * @param string $ref_id Reference id.
+	 * @return array|WP_Error Decoded response on success, WP_Error otherwise.
+	 */
+	public function delete_dokumen( $ref_id ) {
+		$url = self::BASE_URL . '/api/dokumen/' . rawurlencode( $ref_id );
+
+		$response = wp_remote_request(
+			$url,
+			array(
+				'method'  => 'DELETE',
+				'timeout' => self::TIMEOUT,
+				'headers' => array( 'Accept' => 'application/json' ),
+			)
+		);
+
+		return $this->parse_response( $response );
+	}
+
+	/**
 	 * Validate and decode a wp_remote response.
 	 *
 	 * @param array|WP_Error $response Response from wp_remote_*.

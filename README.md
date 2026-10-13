@@ -30,7 +30,7 @@ Pemindai QR ──HTTPS──▶ WordPress ──HTTP 127.0.0.1:8000──▶ Fa
 
 | Komponen | Versi |
 |----------|-------|
-| WordPress | 7.1+ |
+| WordPress | 6.0+ |
 | PHP | 8.2+ |
 | Microservice FastAPI | harus berjalan di `127.0.0.1:8000` |
 | Permalink WordPress | **Post name** (pretty permalinks) — wajib agar rewrite berfungsi |
